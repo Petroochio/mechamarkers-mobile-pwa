@@ -1,0 +1,16 @@
+{
+    "name": "Mechamarkers Mobile",
+    "short_name": "mechamarkers",
+    "description": "Progressive Web App for mechamarkers",
+    "icons": [
+        {
+            "src": "icons/mm-icon-512.png",
+            "sizes": "512x512",
+            "type": "image/png"
+        }
+    ],
+    "start_url": "/index.html",
+    "display": "fullscreen",
+    "theme_color": "#020202",
+    "background_color": "#fefefe"
+}
