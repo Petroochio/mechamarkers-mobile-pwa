@@ -1,10 +1,10 @@
 console.log('service working going');
 // I really only need this worker to cache basic stuff
-const cacheName = 'mm-pwa-v0.0.2';
+const cacheName = 'mm-pwa-v0.0.5';
 const basicAppFiles = [
-  '/mechamarkers-mobile-pwa/index.html',
-  '/mechamarkers-mobile-pwa/build/app.js',
-  '/mechamarkers-mobile-pwa/icons/mm-icon-512.png'
+  '/index.html',
+  '/build/app.js',
+  '/icons/mm-icon-512.png'
 ];
 
 // cache that data
@@ -19,6 +19,7 @@ self.addEventListener('install', (e) => {
 
 // Intercept fetches for cached data
 self.addEventListener('fetch', (e) => {
+  console.log('got fetch')
   e.respondWith(
     caches.match(e.request).then((r) => {
       console.log('[Service Worker] Fetching resource: '+e.request.url);
