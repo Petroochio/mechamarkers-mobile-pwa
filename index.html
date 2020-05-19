@@ -9,9 +9,17 @@
     <!-- <link rel="manifest" href="js13kpwa.webmanifest"> -->
     <link rel="manifest" href="./mechamarkers-mobile.webmanifest">
     <script src="./build/app.js" defer></script>
+    <!-- import the webpage's stylesheet -->
+    <link rel="stylesheet" href="./style.css">
+    
   </head>
 
   <body>
-    <p id="temp-random-content"></p>
+    <video id="video" autoplay="true" style="display:none;"></video>
+    <canvas id="canvas" class="off-screen"></canvas>
+    <canvas id="overlay"></canvas>
+    <div id="canvas-overlay">
+      
+    </div>
   </body>
 </html>

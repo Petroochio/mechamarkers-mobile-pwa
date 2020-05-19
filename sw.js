@@ -1,9 +1,9 @@
-console.log('service working going');
 // I really only need this worker to cache basic stuff
-const cacheName = 'mm-pwa-v0.0.7';
+const cacheName = 'mm-pwa-v0.1.1';
 const basicAppFiles = [
   '/mechamarkers-mobile-pwa',
   '/mechamarkers-mobile-pwa/index.html',
+  '/mechamarkers-mobile-pwa/style.css',
   '/mechamarkers-mobile-pwa/build/app.js',
   '/mechamarkers-mobile-pwa/icons/mm-icon-512.png'
 ];
