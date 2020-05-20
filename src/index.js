@@ -1,4 +1,30 @@
+import Peer from 'peerjs';
 import aruco from './aruco/index.js';
+
+const peer = new Peer({
+  host: '192.168.0.5',
+  port: 9000,
+  path: '/mm-peer',
+});
+
+let peerID;
+let canStreamMarkers = false;
+let shouldStreamVideo = false;
+
+
+let host;
+peer.on('open', (id) => {
+  peerID = id;
+  console.log(`Peer id is: ${id}`);
+
+  host = peer.connect('mm-host');
+  host.on('open', () => {
+    host.send('I have the data for you');
+    canStreamMarkers = true;
+  });
+});
+
+
 
 var video, canvas, context, imageData, detector, aspectRatio;
 var overlay, overlayCtx;
@@ -69,6 +95,8 @@ function update(){
     overlayCtx.clearRect(0,0, overlay.width, overlay.height);
 
     var markers = detector.detect(imageData);
+    console.log(markers);
+    // if (canStreamMarkers) host.send(markers);
     drawCorners(markers);
     drawId(markers);
   }

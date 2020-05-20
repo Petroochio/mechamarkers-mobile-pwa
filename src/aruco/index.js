@@ -39,17 +39,19 @@ function lineY(p, m, x) {
   return m * (x - p.x) + p.y;
 }
 
-AR.Marker = function(id, corners){
-  this.id = id;
-  this.corners = corners;
-  
+AR.Marker = (id, corners) => {
   const m0 = (corners[0].y - corners[2].y) / (corners[0].x - corners[2].x);
   const m1 = (corners[1].y - corners[3].y) / (corners[1].x - corners[3].x);
+  const center = { x: 0, y: 0 };
 
-  this.center = { x: 0, y: 0 };
-  this.center.x = xIntercept(m0, m1, corners[0], corners[1]);
-  this.center.y = lineY(corners[0], m0, this.center.x);
-  
+  center.x = xIntercept(m0, m1, corners[0], corners[1]);
+  center.y = lineY(corners[0], m0, center.x);
+
+  return {
+    id,
+    corners,
+    center,
+  }
 };
 
 AR.Detector = function(){
@@ -219,9 +221,10 @@ AR.Detector.prototype.getMarker = function(imageSrc, candidate){
     return null;
   }
 
-  return new AR.Marker(
-    this.mat2id( rotations[pair.second] ), 
-    this.rotate2(candidate, 4 - pair.second) );
+  return AR.Marker(
+    this.mat2id(rotations[pair.second]), 
+    this.rotate2(candidate, 4 - pair.second)
+  );
 };
 
 AR.Detector.prototype.hammingDistance = function(bits){

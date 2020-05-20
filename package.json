@@ -25,7 +25,6 @@
     "webpack": "^4.43.0",
     "webpack-cli": "^3.3.11"
   },
-
   "babel": {
     "presets": [
       [
@@ -39,5 +38,8 @@
         }
       ]
     ]
+  },
+  "dependencies": {
+    "peerjs": "^1.2.0"
   }
 }
