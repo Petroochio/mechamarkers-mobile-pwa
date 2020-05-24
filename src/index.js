@@ -1,27 +1,47 @@
 import Peer from 'peerjs';
 import aruco from './aruco/index.js';
 
-const peer = new Peer({
-  host: '192.168.0.5',
-  port: 9000,
-  path: '/mm-peer',
+const MESSAGE_TYPES = {
+  SET_HOST: 'SET_HOST',
+  MARKER_DATA: 'MARKER_DATA',
+  VIDEO_DATA: 'VIDEO_DATA',
+};
+// const peer = new Peer();
+
+// let peerID;
+// let canStreamMarkers = false;
+// let shouldStreamVideo = false;
+
+
+// let host;
+// peer.on('open', (id) => {
+//   peerID = id;
+//   console.log(`Peer id is: ${id}`);
+
+//   host = peer.connect('mechamarkers-host');
+//   host.on('open', () => {
+//     host.send('I have the data for you');
+//     canStreamMarkers = true;
+//   });
+// });
+function makeMessage(type, data) {
+  return JSON.stringify({
+    type,
+    data,
+  });
+}
+
+const socket = new WebSocket('ws://localhost:9000');
+let canStream = false;
+
+// Connection opened
+socket.addEventListener('open', function (event) {
+  canStream = true;
 });
 
-let peerID;
-let canStreamMarkers = false;
-let shouldStreamVideo = false;
-
-
-let host;
-peer.on('open', (id) => {
-  peerID = id;
-  console.log(`Peer id is: ${id}`);
-
-  host = peer.connect('mm-host');
-  host.on('open', () => {
-    host.send('I have the data for you');
-    canStreamMarkers = true;
-  });
+// Listen for messages
+socket.addEventListener('message', function (event) {
+    console.log('Message from server ', event.data);
 });
 
 
@@ -78,8 +98,23 @@ function onLoad(){
   requestAnimationFrame(update);
 }
 
+let prevTime = Date.now();
+const FRAME_CAP = .030; // Capped frame rate
+let frameCounter = 0;
+
 function update(){
+  // const currentTime = Date.now();
+  // const dt = currentTime - prevTime;
+  // frameCounter += dt / 1000;
+
   requestAnimationFrame(update);
+
+  // logic for frame capping for future optimizations
+  // browsers are already capped at 60
+  if (frameCounter > FRAME_CAP) {
+    frameCounter = 0;
+  }
+
   if (canvas.width !== video.videoWidth) {
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
@@ -95,41 +130,50 @@ function update(){
     overlayCtx.clearRect(0,0, overlay.width, overlay.height);
 
     var markers = detector.detect(imageData);
-    console.log(markers);
-    // if (canStreamMarkers) host.send(markers);
-    drawCorners(markers);
-    drawId(markers);
+    // console.log(markers);
+    // if (canStreamMarkers) host.send({ type: 'MARKERS', data: markers });
+    // if (shouldStreamVideo) host.send({ type: 'VIDEO', data: imageData });
+
+    if (canStream) {
+      console.log('stream man');
+      const videoData = {
+        frame: canvas.toDataURL('image/jpeg'),
+        width: canvas.width,
+        height: canvas.height,
+      }
+      socket.send(makeMessage(MESSAGE_TYPES.MARKER_DATA, markers));
+      socket.send(makeMessage(MESSAGE_TYPES.VIDEO_DATA, videoData));
+    }
+    // drawCorners(markers);
+    // drawId(markers);
   }
 }
 
-function drawCorners(markers){
-  var corners, corner, i, j;
+function drawCorners(ctx, markers){
+  ctx.lineWidth = 3;
 
-  overlayCtx.lineWidth = 3;
+  markers.forEach((m) => {
+    const { center, corners } = m;
 
-  for (i = 0; i !== markers.length; ++ i){
-    corners = markers[i].corners;
-    const center = markers[i].center;
+    ctx.strokeStyle = "red";
+    ctx.beginPath();
 
-    overlayCtx.strokeStyle = "red";
-    overlayCtx.beginPath();
+    corners.forEach((c, i) => {
+      ctx.moveTo(c.x, c.y);
+      c2 = corners[(I + 1) % corners.length];
+      ctx.lineTo(c2.x, c2.y);
+    });
 
-    for (j = 0; j !== corners.length; ++ j){
-      corner = corners[j];
-      overlayCtx.moveTo(corner.x, corner.y);
-      corner = corners[(j + 1) % corners.length];
-      overlayCtx.lineTo(corner.x, corner.y);
-    }
+    ctx.stroke();
+    ctx.closePath();
 
-    overlayCtx.stroke();
-    overlayCtx.closePath();
+    // draw first corner
+    ctx.strokeStyle = "green";
+    ctx.strokeRect(corners[0].x - 2, corners[0].y - 2, 4, 4);
 
-    overlayCtx.strokeStyle = "green";
-    overlayCtx.strokeRect(corners[0].x - 2, corners[0].y - 2, 4, 4);
-
-    overlayCtx.strokeStyle = "yellow";
-    overlayCtx.strokeRect(center.x - 2, center.y - 2, 4, 4);
-  }
+    ctx.strokeStyle = "yellow";
+    ctx.strokeRect(center.x - 2, center.y - 2, 4, 4);
+  });
 }
 
 function drawId(markers){

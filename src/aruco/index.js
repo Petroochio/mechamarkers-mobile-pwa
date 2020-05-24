@@ -54,6 +54,8 @@ AR.Marker = (id, corners) => {
   }
 };
 
+
+
 AR.Detector = function(){
   this.grey = new CV.Image();
   this.thres = new CV.Image();
@@ -287,5 +289,34 @@ AR.Detector.prototype.rotate2 = function(src, rotation){
 
   return dst;
 };
+
+
+const DEFAULT_DEFECTION_PARAMS = {
+
+};
+
+class ArucoDetector {
+  constructor() {
+    this.grey = new CV.Image();
+    this.thres = new CV.Image();
+    this.homography = new CV.Image();
+    this.binary = [];
+    this.contours = [];
+    this.polys = [];
+    this.candidates = [];
+
+    this.detectionParams = {
+      ...DEFAULT_DEFECTION_PARAMS,
+      ...newParams,
+    };
+  }
+
+  updateParams(newParams) {
+    this.detectionParams = {
+      ...this.detectionParams,
+      ...newParams,
+    };
+  }
+}
 
 export default AR;
