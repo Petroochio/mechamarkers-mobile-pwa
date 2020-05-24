@@ -1454,7 +1454,7 @@ function makeMessage(type, data) {
   });
 }
 
-const socket = new WebSocket('ws://localhost:9000');
+const socket = new WebSocket('ws://192.168.0.5:9000');
 let canStream = false; // Connection opened
 
 socket.addEventListener('open', function (event) {

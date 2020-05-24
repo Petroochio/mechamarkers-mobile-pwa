@@ -1,5 +1,5 @@
 // I really only need this worker to cache basic stuff
-const cacheName = 'mm-pwa-v0.1.3';
+const cacheName = 'mm-pwa-v0.1.4';
 const basicAppFiles = [
   '/mechamarkers-mobile-pwa',
   '/mechamarkers-mobile-pwa/index.html',
