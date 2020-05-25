@@ -1,48 +1,43 @@
 import Peer from 'peerjs';
 import aruco from './aruco/index.js';
 
+let canStreamMarkers = false;
+let host;
+
 const MESSAGE_TYPES = {
   SET_HOST: 'SET_HOST',
   MARKER_DATA: 'MARKER_DATA',
   VIDEO_DATA: 'VIDEO_DATA',
 };
-// const peer = new Peer();
+const peer = new Peer('beholder-client', {
+  secure: true,
+  host: 'beholder-server.herokuapp.com',
+  path: '/peerapp',
+});
+peer.on('open', (id) => {
+  host = peer.connect('beholder-host');
+  host.on('open', (id) => {
+    console.log('wat');
 
-// let peerID;
-// let canStreamMarkers = false;
-// let shouldStreamVideo = false;
-
-
-// let host;
-// peer.on('open', (id) => {
-//   peerID = id;
-//   console.log(`Peer id is: ${id}`);
-
-//   host = peer.connect('mechamarkers-host');
-//   host.on('open', () => {
-//     host.send('I have the data for you');
-//     canStreamMarkers = true;
-//   });
-// });
-function makeMessage(type, data) {
-  return JSON.stringify({
-    type,
-    data,
+    canStreamMarkers = true;
   });
-}
-
-const socket = new WebSocket('ws://192.168.0.5:9000');
-let canStream = false;
-
-// Connection opened
-socket.addEventListener('open', function (event) {
-  canStream = true;
 });
 
-// Listen for messages
-socket.addEventListener('message', function (event) {
-    console.log('Message from server ', event.data);
-});
+let peerID;
+let shouldStreamVideo = false;
+
+// const socket = new WebSocket('ws://192.168.0.5:9000');
+// let canStream = false;
+
+// // Connection opened
+// socket.addEventListener('open', function (event) {
+//   canStream = true;
+// });
+
+// // Listen for messages
+// socket.addEventListener('message', function (event) {
+//     console.log('Message from server ', event.data);
+// });
 
 
 
@@ -111,9 +106,9 @@ function update(){
 
   // logic for frame capping for future optimizations
   // browsers are already capped at 60
-  if (frameCounter > FRAME_CAP) {
-    frameCounter = 0;
-  }
+  // if (frameCounter > FRAME_CAP) {
+  //   frameCounter = 0;
+  // }
 
   if (canvas.width !== video.videoWidth) {
     canvas.width = video.videoWidth;
@@ -134,15 +129,15 @@ function update(){
     // if (canStreamMarkers) host.send({ type: 'MARKERS', data: markers });
     // if (shouldStreamVideo) host.send({ type: 'VIDEO', data: imageData });
 
-    if (canStream) {
-      console.log('stream man');
+    if (canStreamMarkers) {
+      // console.log('stream everything pls');
       const videoData = {
         frame: canvas.toDataURL('image/jpeg'),
         width: canvas.width,
         height: canvas.height,
       }
-      socket.send(makeMessage(MESSAGE_TYPES.MARKER_DATA, markers));
-      socket.send(makeMessage(MESSAGE_TYPES.VIDEO_DATA, videoData));
+      host.send({ type: MESSAGE_TYPES.MARKER_DATA, data: markers });
+      // host.send({ type: MESSAGE_TYPES.VIDEO_DATA, data: videoData });
     }
     // drawCorners(markers);
     // drawId(markers);
