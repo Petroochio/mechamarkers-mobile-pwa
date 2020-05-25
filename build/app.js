@@ -1491,8 +1491,8 @@ function onLoad() {
 
   navigator.mediaDevices.getUserMedia({
     video: {
-      width: 640,
-      height: 480,
+      width: 480,
+      height: 360,
       facingMode: "environment"
     }
   }).then(function (stream) {
@@ -1525,7 +1525,7 @@ function update() {
   // browsers are already capped at 60
 
   if (frameCounter >= FRAME_CAP) {
-    console.log(frameCounter);
+    // console.log(frameCounter);
     frameCounter = 0;
   } else {
     return;

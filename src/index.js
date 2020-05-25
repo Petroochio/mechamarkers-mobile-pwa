@@ -73,7 +73,7 @@ function onLoad(){
   }
   
   navigator.mediaDevices
-    .getUserMedia({ video: { width: 640, height: 480, facingMode: "environment" } })
+    .getUserMedia({ video: { width: 480, height: 360, facingMode: "environment" } })
     .then(function(stream) {
       console.log('kappa?');
       if ("srcObject" in video) {
@@ -109,7 +109,7 @@ function update(){
   // logic for frame capping for future optimizations
   // browsers are already capped at 60
   if (frameCounter >= FRAME_CAP) {
-    console.log(frameCounter);
+    // console.log(frameCounter);
     frameCounter = 0;
   } else {
     return;
