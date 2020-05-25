@@ -75,8 +75,8 @@ function onLoad(){
   navigator.mediaDevices
     .getUserMedia({ video: { width: 640, height: 480, facingMode: "environment" } })
     .then(function(stream) {
+      console.log('kappa?');
       if ("srcObject" in video) {
-        console.log('kappa?')
         video.srcObject = stream;
         aspectRatio = stream.getVideoTracks()[0].getSettings().aspectRatio;
       } else {

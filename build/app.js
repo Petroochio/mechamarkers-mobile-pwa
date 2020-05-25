@@ -1496,6 +1496,8 @@ function onLoad() {
       facingMode: "environment"
     }
   }).then(function (stream) {
+    console.log('kappa?');
+
     if ("srcObject" in video) {
       video.srcObject = stream;
       aspectRatio = stream.getVideoTracks()[0].getSettings().aspectRatio;
