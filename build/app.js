@@ -1513,14 +1513,19 @@ const FRAME_CAP = .030; // Capped frame rate
 let frameCounter = 0;
 
 function update() {
-  // const currentTime = Date.now();
-  // const dt = currentTime - prevTime;
-  // frameCounter += dt / 1000;
+  const currentTime = Date.now();
+  const dt = currentTime - prevTime;
+  prevTime = currentTime;
+  frameCounter += dt / 1000;
   requestAnimationFrame(update); // logic for frame capping for future optimizations
   // browsers are already capped at 60
-  // if (frameCounter > FRAME_CAP) {
-  //   frameCounter = 0;
-  // }
+
+  if (frameCounter >= FRAME_CAP) {
+    console.log(frameCounter);
+    frameCounter = 0;
+  } else {
+    return;
+  }
 
   if (canvas.width !== video.videoWidth) {
     canvas.width = video.videoWidth;
