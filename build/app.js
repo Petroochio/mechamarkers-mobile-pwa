@@ -1434,31 +1434,31 @@ const MESSAGE_TYPES = {
   SET_HOST: 'SET_HOST',
   MARKER_DATA: 'MARKER_DATA',
   VIDEO_DATA: 'VIDEO_DATA'
-};
-const peer = new peerjs__WEBPACK_IMPORTED_MODULE_0___default.a('beholder-client', {
-  secure: true,
-  host: 'beholder-server.herokuapp.com',
-  path: '/peerapp'
-});
-peer.on('open', id => {
-  host = peer.connect('beholder-host');
-  host.on('open', id => {
-    console.log('wat');
-    canStreamMarkers = true;
-  });
-});
-let peerID;
-let shouldStreamVideo = false; // const socket = new WebSocket('ws://192.168.0.5:9000');
-// let canStream = false;
-// // Connection opened
-// socket.addEventListener('open', function (event) {
-//   canStream = true;
+}; // const peer = new Peer('beholder-client', {
+//   secure: true,
+//   host: 'beholder-server.herokuapp.com',
+//   path: '/peerapp',
 // });
-// // Listen for messages
-// socket.addEventListener('message', function (event) {
-//     console.log('Message from server ', event.data);
+// peer.on('open', (id) => {
+//   host = peer.connect('beholder-host');
+//   host.on('open', (id) => {
+//     console.log('wat');
+//     canStreamMarkers = true;
+//   });
 // });
 
+let peerID;
+let shouldStreamVideo = false;
+const socket = new WebSocket('wss://beholder-server.herokuapp.com');
+let canStream = false; // Connection opened
+
+socket.addEventListener('open', function (event) {
+  canStreamMarkers = true;
+}); // Listen for messages
+
+socket.addEventListener('message', function (event) {
+  console.log('Message from server ', event.data);
+});
 var video, canvas, context, imageData, detector, aspectRatio;
 var overlay, overlayCtx;
 
@@ -1512,7 +1512,7 @@ function onLoad() {
 }
 
 let prevTime = Date.now();
-const FRAME_CAP = .030; // Capped frame rate
+const FRAME_CAP = 1.0 / 30; // Capped frame rate, currently 30fps
 
 let frameCounter = 0;
 
@@ -1554,10 +1554,10 @@ function update() {
         width: canvas.width,
         height: canvas.height
       };
-      host.send({
+      socket.send(JSON.stringify({
         type: MESSAGE_TYPES.MARKER_DATA,
         data: markers
-      }); // host.send({ type: MESSAGE_TYPES.VIDEO_DATA, data: videoData });
+      })); // socket.send(JSON.stringify({ type: MESSAGE_TYPES.VIDEO_DATA, data: videoData }));
     } // drawCorners(markers);
     // drawId(markers);
 
