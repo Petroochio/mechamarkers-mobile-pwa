@@ -1093,6 +1093,16 @@ References:
 */
 
 const AR = {};
+let cameraParams = {
+  MIN_MARKER_DISTANCE: 10,
+  MIN_MARKER_PERIMETER: 0.2,
+  MAX_MARKER_PERIMETER: 0.8,
+  SIZE_AFTER_PERSPECTIVE_REMOVAL: 49
+};
+
+AR.setCameraParams = params => {
+  cameraParams = _objectSpread(_objectSpread({}, cameraParams), params);
+};
 
 function xIntercept(m0, m1, p0, p1) {
   return (p0.y - p1.y + m1 * p1.x - m0 * p0.x) / (m1 - m0);
@@ -1133,13 +1143,13 @@ AR.Detector.prototype.detect = function (image) {
   _cv__WEBPACK_IMPORTED_MODULE_0__["default"].grayscale(image, this.grey);
   _cv__WEBPACK_IMPORTED_MODULE_0__["default"].adaptiveThreshold(this.grey, this.thres, 2, 7);
   this.contours = _cv__WEBPACK_IMPORTED_MODULE_0__["default"].findContours(this.thres, this.binary);
-  this.candidates = this.findCandidates(this.contours, image.width * 0.20, 0.05, 10);
+  this.candidates = this.findCandidates(this.contours, image.width * cameraParams.MIN_MARKER_PERIMETER, image.width * cameraParams.MAX_MARKER_PERIMETER, 0.05, 10);
   this.candidates = this.clockwiseCorners(this.candidates);
-  this.candidates = this.notTooNear(this.candidates, 10);
-  return this.findMarkers(this.grey, this.candidates, 49);
+  this.candidates = this.notTooNear(this.candidates, cameraParams.MIN_MARKER_DISTANCE);
+  return this.findMarkers(this.grey, this.candidates, cameraParams.SIZE_AFTER_PERSPECTIVE_REMOVAL);
 };
 
-AR.Detector.prototype.findCandidates = function (contours, minSize, epsilon, minLength) {
+AR.Detector.prototype.findCandidates = function (contours, minSize, maxSize, epsilon, minLength) {
   var candidates = [],
       len = contours.length,
       contour,
@@ -1150,7 +1160,7 @@ AR.Detector.prototype.findCandidates = function (contours, minSize, epsilon, min
   for (i = 0; i < len; ++i) {
     contour = contours[i];
 
-    if (contour.length >= minSize) {
+    if (contour.length >= minSize && contour.length <= maxSize) {
       poly = _cv__WEBPACK_IMPORTED_MODULE_0__["default"].approxPolyDP(contour, contour.length * epsilon);
       this.polys.push(poly);
 
@@ -1428,12 +1438,14 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _aruco_index_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./aruco/index.js */ "./src/aruco/index.js");
 
 
+
 let canStreamMarkers = false;
 let host;
 const MESSAGE_TYPES = {
   SET_HOST: 'SET_HOST',
   MARKER_DATA: 'MARKER_DATA',
-  VIDEO_DATA: 'VIDEO_DATA'
+  VIDEO_DATA: 'VIDEO_DATA',
+  SET_CAMERA_PARAMS: 'SET_CAMERA_PARAMS'
 }; // const peer = new Peer('beholder-client', {
 //   secure: true,
 //   host: 'beholder-server.herokuapp.com',
@@ -1450,14 +1462,27 @@ const MESSAGE_TYPES = {
 let peerID;
 let shouldStreamVideo = false;
 const socket = new WebSocket('wss://beholder-server.herokuapp.com');
-let canStream = false; // Connection opened
+let canStream = false;
+let params = new URL(document.location).searchParams;
+let hostID = params.get('host');
+let observerID = params.get('observerID');
+console.log(hostID, observerID); // Connection opened
 
 socket.addEventListener('open', function (event) {
   canStreamMarkers = true;
 }); // Listen for messages
 
 socket.addEventListener('message', function (event) {
-  console.log('Message from server ', event.data);
+  const msg = JSON.parse(event.data); // console.log('got some data', msg.type);
+
+  switch (msg.type) {
+    case MESSAGE_TYPES.SET_CAMERA_PARAMS:
+      _aruco_index_js__WEBPACK_IMPORTED_MODULE_1__["default"].setCameraParams(msg.data);
+      break;
+
+    default:
+      break;
+  }
 });
 var video, canvas, context, imageData, detector, aspectRatio;
 var overlay, overlayCtx;
@@ -1512,7 +1537,7 @@ function onLoad() {
 }
 
 let prevTime = Date.now();
-const FRAME_CAP = 1.0 / 30; // Capped frame rate, currently 30fps
+const FRAME_CAP = 1.0 / 1; // Capped frame rate, 1/30 = 30fps
 
 let frameCounter = 0;
 

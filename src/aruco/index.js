@@ -29,6 +29,19 @@ import CV from './cv';
 
 
 const AR ={};
+let cameraParams = {
+  MIN_MARKER_DISTANCE: 10,
+  MIN_MARKER_PERIMETER: 0.2,
+  MAX_MARKER_PERIMETER: 0.8,
+  SIZE_AFTER_PERSPECTIVE_REMOVAL: 49,
+}
+
+AR.setCameraParams = (params) => {
+  cameraParams = {
+    ...cameraParams,
+    ...params,
+  };
+}
 
 function xIntercept(m0, m1, p0, p1) {
   return (p0.y - p1.y + (m1 * p1.x) - (m0 * p0.x)) / (m1 - m0);
@@ -72,14 +85,14 @@ AR.Detector.prototype.detect = function(image){
   
   this.contours = CV.findContours(this.thres, this.binary);
 
-  this.candidates = this.findCandidates(this.contours, image.width * 0.20, 0.05, 10);
+  this.candidates = this.findCandidates(this.contours, image.width * cameraParams.MIN_MARKER_PERIMETER, image.width * cameraParams.MAX_MARKER_PERIMETER, 0.05, 10);
   this.candidates = this.clockwiseCorners(this.candidates);
-  this.candidates = this.notTooNear(this.candidates, 10);
+  this.candidates = this.notTooNear(this.candidates, cameraParams.MIN_MARKER_DISTANCE);
 
-  return this.findMarkers(this.grey, this.candidates, 49);
+  return this.findMarkers(this.grey, this.candidates, cameraParams.SIZE_AFTER_PERSPECTIVE_REMOVAL);
 };
 
-AR.Detector.prototype.findCandidates = function(contours, minSize, epsilon, minLength){
+AR.Detector.prototype.findCandidates = function(contours, minSize, maxSize, epsilon, minLength){
   var candidates = [], len = contours.length, contour, poly, i;
 
   this.polys = [];
@@ -87,7 +100,7 @@ AR.Detector.prototype.findCandidates = function(contours, minSize, epsilon, minL
   for (i = 0; i < len; ++ i){
     contour = contours[i];
 
-    if (contour.length >= minSize){
+    if (contour.length >= minSize && contour.length <= maxSize){
       poly = CV.approxPolyDP(contour, contour.length * epsilon);
 
       this.polys.push(poly);

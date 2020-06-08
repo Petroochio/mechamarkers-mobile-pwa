@@ -1,5 +1,6 @@
 import Peer from 'peerjs';
 import aruco from './aruco/index.js';
+import AR from './aruco/index.js';
 
 let canStreamMarkers = false;
 let host;
@@ -8,6 +9,7 @@ const MESSAGE_TYPES = {
   SET_HOST: 'SET_HOST',
   MARKER_DATA: 'MARKER_DATA',
   VIDEO_DATA: 'VIDEO_DATA',
+  SET_CAMERA_PARAMS: 'SET_CAMERA_PARAMS',
 };
 // const peer = new Peer('beholder-client', {
 //   secure: true,
@@ -29,6 +31,11 @@ let shouldStreamVideo = false;
 const socket = new WebSocket('wss://beholder-server.herokuapp.com');
 let canStream = false;
 
+let params = (new URL(document.location)).searchParams;
+let hostID = params.get('host');
+let observerID = params.get('observerID');
+console.log(hostID, observerID);
+
 // Connection opened
 socket.addEventListener('open', function (event) {
   canStreamMarkers = true;
@@ -36,7 +43,14 @@ socket.addEventListener('open', function (event) {
 
 // Listen for messages
 socket.addEventListener('message', function (event) {
-    console.log('Message from server ', event.data);
+    const msg = JSON.parse(event.data);
+    // console.log('got some data', msg.type);
+    switch (msg.type) {
+      case MESSAGE_TYPES.SET_CAMERA_PARAMS:
+        AR.setCameraParams(msg.data);
+        break;
+      default: break;
+    }
 });
 
 
@@ -95,7 +109,7 @@ function onLoad(){
 }
 
 let prevTime = Date.now();
-const FRAME_CAP = 1.0 / 30; // Capped frame rate, currently 30fps
+const FRAME_CAP = 1.0 / 1; // Capped frame rate, 1/30 = 30fps
 let frameCounter = 0;
 
 function update(){
