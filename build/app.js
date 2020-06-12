@@ -1440,36 +1440,32 @@ __webpack_require__.r(__webpack_exports__);
 
 
 let canStreamMarkers = false;
-let host;
 const MESSAGE_TYPES = {
   SET_HOST: 'SET_HOST',
   MARKER_DATA: 'MARKER_DATA',
   VIDEO_DATA: 'VIDEO_DATA',
-  SET_CAMERA_PARAMS: 'SET_CAMERA_PARAMS'
-}; // const peer = new Peer('beholder-client', {
-//   secure: true,
-//   host: 'beholder-server.herokuapp.com',
-//   path: '/peerapp',
-// });
-// peer.on('open', (id) => {
-//   host = peer.connect('beholder-host');
-//   host.on('open', (id) => {
-//     console.log('wat');
-//     canStreamMarkers = true;
-//   });
-// });
-
+  SET_CAMERA_PARAMS: 'SET_CAMERA_PARAMS',
+  CONNECT_TO_HOST: 'CONNECT_TO_HOST'
+};
 let peerID;
 let shouldStreamVideo = false;
 const socket = new WebSocket('wss://beholder-server.herokuapp.com');
 let canStream = false;
-let params = new URL(document.location).searchParams;
-let hostID = params.get('host');
-let observerID = params.get('observerID');
-console.log(hostID, observerID); // Connection opened
+const params = new URL(document.location).searchParams;
+const hostID = params.get('host');
+const observerID = params.get('observerID'); // Connection opened
 
 socket.addEventListener('open', function (event) {
   canStreamMarkers = true;
+  console.log(hostID, observerID);
+  const msg = {
+    type: MESSAGE_TYPES.CONNECT_TO_HOST,
+    data: {
+      hostID,
+      observerID
+    }
+  };
+  socket.send(JSON.stringify(msg));
 }); // Listen for messages
 
 socket.addEventListener('message', function (event) {
@@ -1581,7 +1577,11 @@ function update() {
       };
       socket.send(JSON.stringify({
         type: MESSAGE_TYPES.MARKER_DATA,
-        data: markers
+        data: {
+          hostID,
+          observerID,
+          markers
+        }
       })); // socket.send(JSON.stringify({ type: MESSAGE_TYPES.VIDEO_DATA, data: videoData }));
     } // drawCorners(markers);
     // drawId(markers);
