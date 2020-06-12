@@ -26,7 +26,7 @@ const observerID = params.get('observerID');
 socket.addEventListener('open', function (event) {
   canStreamMarkers = true;
 
-  console.log(hostID, observerID);
+  // console.log(hostID, observerID);
   const msg = {
     type: MESSAGE_TYPES.CONNECT_TO_HOST,
     data: {
@@ -43,7 +43,7 @@ socket.addEventListener('message', function (event) {
     // console.log('got some data', msg.type);
     switch (msg.type) {
       case MESSAGE_TYPES.SET_CAMERA_PARAMS:
-        AR.setCameraParams(msg.data);
+        AR.setCameraParams(msg.data.params);
         break;
       default: break;
     }

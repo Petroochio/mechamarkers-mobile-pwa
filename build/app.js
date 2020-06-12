@@ -1456,8 +1456,8 @@ const hostID = params.get('host');
 const observerID = params.get('observerID'); // Connection opened
 
 socket.addEventListener('open', function (event) {
-  canStreamMarkers = true;
-  console.log(hostID, observerID);
+  canStreamMarkers = true; // console.log(hostID, observerID);
+
   const msg = {
     type: MESSAGE_TYPES.CONNECT_TO_HOST,
     data: {
@@ -1473,7 +1473,7 @@ socket.addEventListener('message', function (event) {
 
   switch (msg.type) {
     case MESSAGE_TYPES.SET_CAMERA_PARAMS:
-      _aruco_index_js__WEBPACK_IMPORTED_MODULE_1__["default"].setCameraParams(msg.data);
+      _aruco_index_js__WEBPACK_IMPORTED_MODULE_1__["default"].setCameraParams(msg.data.params);
       break;
 
     default:
