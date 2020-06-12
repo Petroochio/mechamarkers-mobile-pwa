@@ -1517,8 +1517,6 @@ function onLoad() {
       facingMode: "environment"
     }
   }).then(function (stream) {
-    console.log('kappa?');
-
     if ("srcObject" in video) {
       video.srcObject = stream;
       aspectRatio = stream.getVideoTracks()[0].getSettings().aspectRatio;
@@ -1533,7 +1531,7 @@ function onLoad() {
 }
 
 let prevTime = Date.now();
-const FRAME_CAP = 1.0 / 1; // Capped frame rate, 1/30 = 30fps
+const FRAME_CAP = 1.0 / 30; // Capped frame rate, 1/30 = 30fps
 
 let frameCounter = 0;
 
@@ -1634,7 +1632,7 @@ function drawId(markers) {
 window.onload = onLoad; // service worker businus
 
 if ('serviceWorker' in navigator) {
-  console.log('doin service');
+  // console.log('doin service');
   navigator.serviceWorker.register('./sw.js');
 }
 
