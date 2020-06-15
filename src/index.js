@@ -1,4 +1,3 @@
-import Peer from 'peerjs';
 import aruco from './aruco/index.js';
 import AR from './aruco/index.js';
 
@@ -21,6 +20,7 @@ let canStream = false;
 const params = (new URL(document.location)).searchParams;
 const hostID = params.get('host');
 const observerID = params.get('observerID');
+let fpsCounter;
 
 // Connection opened
 socket.addEventListener('open', function (event) {
@@ -60,6 +60,7 @@ function onLoad(){
   context = canvas.getContext("2d");
   overlay = document.getElementById("overlay");
   overlayCtx = overlay.getContext("2d");
+  fpsCounter = document.querySelector('#fps');
 
   canvas.width = window.innerWidth;
   canvas.height = window.innerHeight;
@@ -118,8 +119,9 @@ function update(){
   // logic for frame capping for future optimizations
   // browsers are already capped at 60
   if (frameCounter >= FRAME_CAP) {
-    // console.log(frameCounter);
+    fpsCounter.innerHTML = Math.floor(1 / frameCounter);
     frameCounter = 0;
+
   } else {
     return;
   }
@@ -139,25 +141,13 @@ function update(){
     overlayCtx.clearRect(0,0, overlay.width, overlay.height);
 
     var markers = detector.detect(imageData);
-    // console.log(markers);
-    // if (canStreamMarkers) host.send({ type: 'MARKERS', data: markers });
-    // if (shouldStreamVideo) host.send({ type: 'VIDEO', data: imageData });
 
     if (canStreamMarkers) {
-      // console.log('stream everything pls');
-      const videoData = {
-        frame: canvas.toDataURL('image/jpeg'),
-        width: canvas.width,
-        height: canvas.height,
-      }
       socket.send(JSON.stringify({
         type: MESSAGE_TYPES.MARKER_DATA,
         data: { hostID, observerID, markers },
       }));
-      // socket.send(JSON.stringify({ type: MESSAGE_TYPES.VIDEO_DATA, data: videoData }));
     }
-    // drawCorners(markers);
-    // drawId(markers);
   }
 }
 
