@@ -1431,7 +1431,7 @@ function onLoad() {
 }
 
 let prevTime = Date.now();
-const FRAME_CAP = 1.0 / 50; // Capped frame rate, 1/30 = 30fps
+const FRAME_CAP = 1.0 / 35; // Capped frame rate, 1/30 = 30fps
 
 let frameCounter = 0;
 
