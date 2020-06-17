@@ -1042,7 +1042,7 @@ AR.Detector = function () {
 
 AR.Detector.prototype.detect = function (image) {
   _cv__WEBPACK_IMPORTED_MODULE_0__["default"].grayscale(image, this.grey);
-  _cv__WEBPACK_IMPORTED_MODULE_0__["default"].adaptiveThreshold(this.grey, this.thres, 1, 7);
+  _cv__WEBPACK_IMPORTED_MODULE_0__["default"].adaptiveThreshold(this.grey, this.thres, 0, 7);
   this.contours = _cv__WEBPACK_IMPORTED_MODULE_0__["default"].findContours(this.thres, this.binary);
   this.candidates = this.findCandidates(this.contours, image.width * cameraParams.MIN_MARKER_PERIMETER, image.width * cameraParams.MAX_MARKER_PERIMETER, 0.05, 10);
   this.candidates = this.clockwiseCorners(this.candidates);
@@ -1431,7 +1431,7 @@ function onLoad() {
 }
 
 let prevTime = Date.now();
-const FRAME_CAP = 1.0 / 30; // Capped frame rate, 1/30 = 30fps
+const FRAME_CAP = 1.0 / 50; // Capped frame rate, 1/30 = 30fps
 
 let frameCounter = 0;
 
