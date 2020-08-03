@@ -40,6 +40,7 @@
     ]
   },
   "dependencies": {
-    "peerjs": "^1.2.0"
+    "peerjs": "^1.2.0",
+    "pixi.js": "^5.3.0"
   }
 }
