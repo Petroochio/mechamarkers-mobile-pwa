@@ -67,8 +67,6 @@ AR.Marker = (id, corners) => {
   }
 };
 
-
-
 AR.Detector = function(){
   this.grey = new CV.Image();
   this.thres = new CV.Image();
@@ -79,17 +77,15 @@ AR.Detector = function(){
   this.candidates = [];
 };
 
-AR.Detector.prototype.detect = function(image){
-  CV.grayscale(image, this.grey);
-  CV.adaptiveThreshold(this.grey, this.thres, 2, 7);
+AR.Detector.prototype.detect = function(image, greyImage){
   
-  this.contours = CV.findContours(this.thres, this.binary);
+  this.contours = CV.findContours(image, this.binary);
 
   this.candidates = this.findCandidates(this.contours, image.width * cameraParams.MIN_MARKER_PERIMETER, image.width * cameraParams.MAX_MARKER_PERIMETER, 0.05, 10);
   this.candidates = this.clockwiseCorners(this.candidates);
   this.candidates = this.notTooNear(this.candidates, cameraParams.MIN_MARKER_DISTANCE);
-
-  return this.findMarkers(this.grey, this.candidates, cameraParams.SIZE_AFTER_PERSPECTIVE_REMOVAL);
+  // console.log(this.candidates);
+  return this.findMarkers(greyImage, this.candidates, cameraParams.SIZE_AFTER_PERSPECTIVE_REMOVAL);
 };
 
 AR.Detector.prototype.findCandidates = function(contours, minSize, maxSize, epsilon, minLength){

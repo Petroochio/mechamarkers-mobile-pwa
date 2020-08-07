@@ -43529,6 +43529,41 @@ module.exports = function(module) {
 
 /***/ }),
 
+/***/ "./src/aruco/GreyscaleImage.js":
+/*!*************************************!*\
+  !*** ./src/aruco/GreyscaleImage.js ***!
+  \*************************************/
+/*! exports provided: default */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+class GreyscaleImage {
+  constructor(width, height) {
+    this.width = width;
+    this.height = height;
+    this.size = width * height;
+    this.data = [];
+    this.data.length = this.size;
+  }
+
+  sampleFrom(src, totalWidth, xOff, yOff) {
+    for (let i = 0; i < this.height; i++) {
+      let y = i + yOff;
+
+      for (let j = 0; j < this.width; j++) {
+        let x = j + xOff;
+        this.data[i * this.width + j] = src[(i * totalWidth + x) * 4];
+      }
+    }
+  }
+
+}
+
+/* harmony default export */ __webpack_exports__["default"] = (GreyscaleImage);
+
+/***/ }),
+
 /***/ "./src/aruco/cv.js":
 /*!*************************!*\
   !*** ./src/aruco/cv.js ***!
@@ -44483,14 +44518,13 @@ AR.Detector = function () {
   this.candidates = [];
 };
 
-AR.Detector.prototype.detect = function (image) {
-  _cv__WEBPACK_IMPORTED_MODULE_0__["default"].grayscale(image, this.grey);
-  _cv__WEBPACK_IMPORTED_MODULE_0__["default"].adaptiveThreshold(this.grey, this.thres, 2, 7);
-  this.contours = _cv__WEBPACK_IMPORTED_MODULE_0__["default"].findContours(this.thres, this.binary);
+AR.Detector.prototype.detect = function (image, greyImage) {
+  this.contours = _cv__WEBPACK_IMPORTED_MODULE_0__["default"].findContours(image, this.binary);
   this.candidates = this.findCandidates(this.contours, image.width * cameraParams.MIN_MARKER_PERIMETER, image.width * cameraParams.MAX_MARKER_PERIMETER, 0.05, 10);
   this.candidates = this.clockwiseCorners(this.candidates);
-  this.candidates = this.notTooNear(this.candidates, cameraParams.MIN_MARKER_DISTANCE);
-  return this.findMarkers(this.grey, this.candidates, cameraParams.SIZE_AFTER_PERSPECTIVE_REMOVAL);
+  this.candidates = this.notTooNear(this.candidates, cameraParams.MIN_MARKER_DISTANCE); // console.log(this.candidates);
+
+  return this.findMarkers(greyImage, this.candidates, cameraParams.SIZE_AFTER_PERSPECTIVE_REMOVAL);
 };
 
 AR.Detector.prototype.findCandidates = function (contours, minSize, maxSize, epsilon, minLength) {
@@ -44779,6 +44813,8 @@ class ArucoDetector {
 __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var pixi_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! pixi.js */ "./node_modules/pixi.js/lib/pixi.es.js");
 /* harmony import */ var _aruco_index_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./aruco/index.js */ "./src/aruco/index.js");
+/* harmony import */ var _aruco_GreyscaleImage__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./aruco/GreyscaleImage */ "./src/aruco/GreyscaleImage.js");
+
 
 
 
@@ -44824,12 +44860,16 @@ let fpsCounter; // Connection opened
 
 var video, canvas, context, imageData, detector, aspectRatio;
 var overlay, overlayCtx;
+var debugOverlay, debugGraphics, debugApp, arucoApp;
+let app;
 
 function onLoad() {
-  video = document.getElementById("video"); //   canvas = document.getElementById("canvas");
-  //   context = canvas.getContext("2d");
+  video = document.getElementById("video"); // canvas = document.getElementById("canvas");
+  // context = canvas.getContext("2d");
 
-  overlay = document.getElementById("pixi-overlay"); //   overlayCtx = overlay.getContext("2d");
+  overlay = document.getElementById("pixi-overlay"); // debugOverlay = document.getElementById("pixi-overlay");
+  // mOverlay = document.getElementById("overlay");
+  // overlayCtx = overlay.getContext("2d");
   //   fpsCounter = document.querySelector('#fps');
   //   canvas.width = window.innerWidth;
   //   canvas.height = window.innerHeight;
@@ -44858,10 +44898,10 @@ function onLoad() {
     type = "canvas";
   }
 
-  let app = new pixi_js__WEBPACK_IMPORTED_MODULE_0__["Application"]({
-    width: 480,
+  app = new pixi_js__WEBPACK_IMPORTED_MODULE_0__["Application"]({
+    width: 960,
     // default: 800
-    height: 360,
+    height: 720,
     // default: 600
     antialias: true,
     // default: false
@@ -44870,12 +44910,32 @@ function onLoad() {
     resolution: 1,
     // default: 1
     view: document.querySelector('#pixi-overlay')
-  }); // overlay.appendChild(app.view);
+  }); // arucoApp = new PIXI.Application({  
+  //   width: 480,         // default: 800
+  //   height: 360,        // default: 600
+  //   antialias: true,    // default: false
+  //   transparent: false, // default: false
+  //   resolution: 1,      // default: 1
+  //   view: document.querySelector('#aruco-app')
+  // });
+  // debugApp = new PIXI.Application({  
+  //   width: 480,         // default: 800
+  //   height: 360,        // default: 600
+  //   antialias: true,    // default: false
+  //   transparent: false, // default: false
+  //   resolution: 1,      // default: 1
+  //   view: document.querySelector('#debug-overlay')
+  // });
+  // overlay.appendChild(app.view);
 
   var texture = pixi_js__WEBPACK_IMPORTED_MODULE_0__["Texture"].from(video);
+  var texture2 = pixi_js__WEBPACK_IMPORTED_MODULE_0__["Texture"].from(video);
   var videoSprite = new pixi_js__WEBPACK_IMPORTED_MODULE_0__["Sprite"](texture);
-  videoSprite.width = app.renderer.width;
-  videoSprite.height = app.renderer.height;
+  var greyVideoSprite = new pixi_js__WEBPACK_IMPORTED_MODULE_0__["Sprite"](texture2);
+  videoSprite.width = 480;
+  videoSprite.height = 360;
+  greyVideoSprite.width = 480;
+  greyVideoSprite.height = 360;
   const greyScale = `
     varying vec2 vTextureCoord;
     uniform sampler2D uSampler;
@@ -44885,88 +44945,57 @@ function onLoad() {
       float gray = dot(color.rgb, vec3(0.299, 0.587, 0.114));
       gl_FragColor = vec4(vec3(gray), 1.0);
     }
-  `; // src: http://callumhay.blogspot.com/2010/09/gaussian-blur-shader-glsl.html
+  `;
+  const boxBlur = `
+    varying vec2 vTextureCoord;
+    uniform sampler2D uSampler;  // Texture that will be blurred by this shader
 
-  const blurShader = `
-  varying vec2 vTextureCoord;
-  uniform sampler2D uSampler;  // Texture that will be blurred by this shader
+    const float blurSize = 2.0;
+    const float blurDiv = (blurSize * 2.0 + 1.0) * (blurSize * 2.0 + 1.0);
+    const float pixelX = 1.0 / 480.0;
+    const float pixelY = 1.0 / 360.0;
 
-  const float sigma = 2.0;     // The sigma value for the gaussian function: higher value means more blur
-                         // A good value for 9x9 is around 3 to 5
-                         // A good value for 7x7 is around 2.5 to 4
-                         // A good value for 5x5 is around 2 to 3.5
-                         // ... play around with this based on what you need :)
+    void main() {
+      float source = texture2D(uSampler, vTextureCoord).r;
+      float blurredVal = 0.0;
+      for (float x = -blurSize; x <= blurSize; x++) {
+        for (float y = -blurSize; y <= blurSize; y++) {
+          float neighbor = texture2D(uSampler, vec2(vTextureCoord.x + (pixelX * x), vTextureCoord.y + (pixelY * y))).r;
+          blurredVal += neighbor;
+        }
+      }
 
-const float blurSize = 1.0 / 480.0;  // This should usually be equal to
-                         // 1.0f / texture_pixel_width for a horizontal blur, and
-                         // 1.0f / texture_pixel_height for a vertical blur.
+      blurredVal = blurredVal / blurDiv;  
+      blurredVal = (source - blurredVal < -0.035) ? 1.0 : 0.0;
+      // blurredVal = texture2D(uSampler, vec2(vTextureCoord.x + (pixelX * 30.0), vTextureCoord.y + (pixelY * 30.0))).r;
 
-const float pi = 3.14159265;
+      gl_FragColor = vec4(blurredVal, blurredVal, blurredVal, 1.0);
+    }`; // 2 7 
+  // kernal, threshold ^
+  // i <= threshold? 0: 255;
 
-// The following are all mutually exclusive macros for various 
-// seperable blurs of varying kernel size
-// #if defined(VERTICAL_BLUR_9)
-// const float numBlurPixelsPerSide = 4.0;
-// const vec2  blurMultiplyVec      = vec2(0.0, 1.0);
-// #elif defined(HORIZONTAL_BLUR_9)
-// const float numBlurPixelsPerSide = 4.0;
-// const vec2  blurMultiplyVec      = vec2(1.0, 0.0);
-// #elif defined(VERTICAL_BLUR_7)
-// const float numBlurPixelsPerSide = 3.0;
-// const vec2  blurMultiplyVec      = vec2(0.0, 1.0);
-// #elif defined(HORIZONTAL_BLUR_7)
-// const float numBlurPixelsPerSide = 3.0;
-// const vec2  blurMultiplyVec      = vec2(1.0, 0.0);
-// #elif defined(VERTICAL_BLUR_5)
-// const float numBlurPixelsPerSide = 2.0;
-// const vec2  blurMultiplyVec      = vec2(0.0, 1.0);
-// #elif defined(HORIZONTAL_BLUR_5)
-// const float numBlurPixelsPerSide = 2.0;
-// const vec2  blurMultiplyVec      = vec2(1.0, 0.0);
-// #else
-// // This only exists to get this shader to compile when no macros are defined
-// const float numBlurPixelsPerSide = 2.0;
-// const vec2  blurMultiplyVec      = vec2(1.0, 0.0);
-// #endif
-
-const float numBlurPixelsPerSide = 20.0;
-const vec2  blurMultiplyVec      = vec2(0.0, 1.0);
-
-void main() {
-
-  // Incremental Gaussian Coefficent Calculation (See GPU Gems 3 pp. 877 - 889)
-  vec3 incrementalGaussian;
-  incrementalGaussian.x = 1.0 / (sqrt(2.0 * pi) * sigma);
-  incrementalGaussian.y = exp(-0.5 / (sigma * sigma));
-  incrementalGaussian.z = incrementalGaussian.y * incrementalGaussian.y;
-
-  vec4 avgValue = vec4(0.0, 0.0, 0.0, 0.0);
-  float coefficientSum = 0.0;
-
-  // Take the central sample first...
-  avgValue += texture2D(uSampler, vTextureCoord) * incrementalGaussian.x;
-  coefficientSum += incrementalGaussian.x;
-  incrementalGaussian.xy *= incrementalGaussian.yz;
-
-  // Go through the remaining 8 vertical samples (4 on each side of the center)
-  for (float i = 1.0; i <= numBlurPixelsPerSide; i++) { 
-    avgValue += texture2D(uSampler, vTextureCoord - i * blurSize * 
-                          blurMultiplyVec) * incrementalGaussian.x;         
-    avgValue += texture2D(uSampler, vTextureCoord + i * blurSize * 
-                          blurMultiplyVec) * incrementalGaussian.x;     
-    coefficientSum += 2.0 * incrementalGaussian.x;
-    incrementalGaussian.xy *= incrementalGaussian.yz;
-  }
-
-  gl_FragColor = avgValue / coefficientSum;
-}
+  const threshold = `
+    varying vec2 vTextureCoord;
+    uniform sampler2D uSampler;
+    void main(void)
+    {
+      // vec4 color = texture2D(uSampler, vTextureCoord);
+      // float thres = color.r > 0.6 ? 1.0 : 0.0;
+      // gl_FragColor = vec4(thres, thres, thres, 1.0);
+    }
   `;
   const greyFilter = new pixi_js__WEBPACK_IMPORTED_MODULE_0__["Filter"]('', greyScale, {});
-  const blurFilter = new pixi_js__WEBPACK_IMPORTED_MODULE_0__["Filter"]('', blurShader, {});
-  console.log('wat');
-  videoSprite.filters = [greyFilter, blurFilter]; //sprite to canvas
+  const boxBlurFilter = new pixi_js__WEBPACK_IMPORTED_MODULE_0__["Filter"]('', boxBlur, {});
+  const thresholdFilter = new pixi_js__WEBPACK_IMPORTED_MODULE_0__["Filter"]('', threshold, {});
+  videoSprite.filters = [greyFilter, boxBlurFilter];
+  greyVideoSprite.filters = [greyFilter]; //sprite to canvas
 
   app.stage.addChild(videoSprite);
+  videoSprite.position.x = 480;
+  app.stage.addChild(greyVideoSprite);
+  debugGraphics = new pixi_js__WEBPACK_IMPORTED_MODULE_0__["Graphics"]();
+  debugGraphics.position.y = 360;
+  app.stage.addChild(debugGraphics);
   navigator.mediaDevices.getUserMedia({
     video: {
       width: 480,
@@ -44991,6 +45020,8 @@ let prevTime = Date.now();
 const FRAME_CAP = 1.0 / 35; // Capped frame rate, 1/30 = 30fps
 
 let frameCounter = 0;
+let greyFormatImage = new _aruco_GreyscaleImage__WEBPACK_IMPORTED_MODULE_2__["default"](480, 360);
+let greyFormatSourceImage = new _aruco_GreyscaleImage__WEBPACK_IMPORTED_MODULE_2__["default"](480, 360);
 
 function update() {
   const currentTime = Date.now();
@@ -45008,23 +45039,36 @@ function update() {
   } // if (canvas.width !== video.videoWidth) {
   //   canvas.width = video.videoWidth;
   //   canvas.height = video.videoHeight;
-  //   overlay.width = video.videoWidth;
-  //   overlay.height = video.videoHeight;
+  // mOverlay.width = app.renderer.view.videoWidth;
+  // mOverlay.height = app.renderer.view.videoHeight;
   // }
   // if (video.readyState === video.HAVE_ENOUGH_DATA){
   // // Render video frame
-  // context.drawImage(video, 0, 0, canvas.width, canvas.height);
-  // imageData = context.getImageData(0, 0, canvas.width, canvas.height);
-  // overlayCtx.clearRect(0,0, overlay.width, overlay.height);
-  // var markers = detector.detect(imageData);
-  // if (canStreamMarkers) {
+
+
+  imageData = app.renderer.extract.pixels(app.stage);
+  greyFormatImage.sampleFrom(imageData, 480 * 2, 480, 0);
+  greyFormatSourceImage.sampleFrom(imageData, 480 * 2, 0, 0); // overlayCtx.clearRect(0,0, overlay.width, overlay.height);
+
+  var markers = detector.detect(greyFormatImage, greyFormatSourceImage);
+  debugGraphics.clear(); // Draw candidates
+
+  markers.forEach(m => {
+    const c = m.corners;
+    debugGraphics.lineStyle(1, 0xffffff);
+    debugGraphics.moveTo(c[0].x, c[0].y);
+    debugGraphics.lineTo(c[1].x, c[1].y);
+    debugGraphics.lineTo(c[2].x, c[2].y);
+    debugGraphics.lineTo(c[3].x, c[3].y);
+    debugGraphics.lineTo(c[0].x, c[0].y);
+    debugGraphics.endFill();
+  }); // if (canStreamMarkers) {
   //   socket.send(JSON.stringify({
   //     type: MESSAGE_TYPES.MARKER_DATA,
   //     data: { hostID, observerID, markers },
   //   }));
   // }
   // }
-
 }
 
 function drawCorners(ctx, markers) {

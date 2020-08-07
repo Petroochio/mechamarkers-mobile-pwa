@@ -1,6 +1,7 @@
 import * as PIXI from 'pixi.js';
 import aruco from './aruco/index.js';
 import AR from './aruco/index.js';
+import GreyscaleImage from './aruco/GreyscaleImage';
 
 let canStreamMarkers = false;
 
@@ -52,13 +53,17 @@ let fpsCounter;
 
 var video, canvas, context, imageData, detector, aspectRatio;
 var overlay, overlayCtx;
+var debugOverlay, debugGraphics, debugApp, arucoApp;
+let app;
   
 function onLoad(){
   video = document.getElementById("video");
-//   canvas = document.getElementById("canvas");
-//   context = canvas.getContext("2d");
+// canvas = document.getElementById("canvas");
+// context = canvas.getContext("2d");
   overlay = document.getElementById("pixi-overlay");
-//   overlayCtx = overlay.getContext("2d");
+  // debugOverlay = document.getElementById("pixi-overlay");
+  // mOverlay = document.getElementById("overlay");
+  // overlayCtx = overlay.getContext("2d");
 //   fpsCounter = document.querySelector('#fps');
 
 //   canvas.width = window.innerWidth;
@@ -87,21 +92,41 @@ function onLoad(){
     type = "canvas"
   }
 
-  let app = new PIXI.Application({  
-    width: 480,         // default: 800
-    height: 360,        // default: 600
+  app = new PIXI.Application({  
+    width: 960,         // default: 800
+    height: 720,        // default: 600
     antialias: true,    // default: false
     transparent: false, // default: false
     resolution: 1,      // default: 1
     view: document.querySelector('#pixi-overlay')
   });
+  // arucoApp = new PIXI.Application({  
+  //   width: 480,         // default: 800
+  //   height: 360,        // default: 600
+  //   antialias: true,    // default: false
+  //   transparent: false, // default: false
+  //   resolution: 1,      // default: 1
+  //   view: document.querySelector('#aruco-app')
+  // });
+  // debugApp = new PIXI.Application({  
+  //   width: 480,         // default: 800
+  //   height: 360,        // default: 600
+  //   antialias: true,    // default: false
+  //   transparent: false, // default: false
+  //   resolution: 1,      // default: 1
+  //   view: document.querySelector('#debug-overlay')
+  // });
 
   // overlay.appendChild(app.view);
 
   var texture = PIXI.Texture.from(video);
+  var texture2 = PIXI.Texture.from(video);
   var videoSprite = new PIXI.Sprite(texture);
-  videoSprite.width = app.renderer.width;
-  videoSprite.height = app.renderer.height;
+  var greyVideoSprite = new PIXI.Sprite(texture2);
+  videoSprite.width = 480;
+  videoSprite.height = 360;
+  greyVideoSprite.width = 480;
+  greyVideoSprite.height = 360;
 
   const greyScale = `
     varying vec2 vTextureCoord;
@@ -114,89 +139,61 @@ function onLoad(){
     }
   `;
 
-  // src: http://callumhay.blogspot.com/2010/09/gaussian-blur-shader-glsl.html
-  const blurShader = `
-  varying vec2 vTextureCoord;
-  uniform sampler2D uSampler;  // Texture that will be blurred by this shader
+  const boxBlur = `
+    varying vec2 vTextureCoord;
+    uniform sampler2D uSampler;  // Texture that will be blurred by this shader
 
-  const float sigma = 2.0;     // The sigma value for the gaussian function: higher value means more blur
-                         // A good value for 9x9 is around 3 to 5
-                         // A good value for 7x7 is around 2.5 to 4
-                         // A good value for 5x5 is around 2 to 3.5
-                         // ... play around with this based on what you need :)
+    const float blurSize = 2.0;
+    const float blurDiv = (blurSize * 2.0 + 1.0) * (blurSize * 2.0 + 1.0);
+    const float pixelX = 1.0 / 480.0;
+    const float pixelY = 1.0 / 360.0;
 
-const float blurSize = 1.0 / 480.0;  // This should usually be equal to
-                         // 1.0f / texture_pixel_width for a horizontal blur, and
-                         // 1.0f / texture_pixel_height for a vertical blur.
+    void main() {
+      float source = texture2D(uSampler, vTextureCoord).r;
+      float blurredVal = 0.0;
+      for (float x = -blurSize; x <= blurSize; x++) {
+        for (float y = -blurSize; y <= blurSize; y++) {
+          float neighbor = texture2D(uSampler, vec2(vTextureCoord.x + (pixelX * x), vTextureCoord.y + (pixelY * y))).r;
+          blurredVal += neighbor;
+        }
+      }
 
-const float pi = 3.14159265;
+      blurredVal = blurredVal / blurDiv;  
+      blurredVal = (source - blurredVal < -0.035) ? 1.0 : 0.0;
+      // blurredVal = texture2D(uSampler, vec2(vTextureCoord.x + (pixelX * 30.0), vTextureCoord.y + (pixelY * 30.0))).r;
 
-// The following are all mutually exclusive macros for various 
-// seperable blurs of varying kernel size
-// #if defined(VERTICAL_BLUR_9)
-// const float numBlurPixelsPerSide = 4.0;
-// const vec2  blurMultiplyVec      = vec2(0.0, 1.0);
-// #elif defined(HORIZONTAL_BLUR_9)
-// const float numBlurPixelsPerSide = 4.0;
-// const vec2  blurMultiplyVec      = vec2(1.0, 0.0);
-// #elif defined(VERTICAL_BLUR_7)
-// const float numBlurPixelsPerSide = 3.0;
-// const vec2  blurMultiplyVec      = vec2(0.0, 1.0);
-// #elif defined(HORIZONTAL_BLUR_7)
-// const float numBlurPixelsPerSide = 3.0;
-// const vec2  blurMultiplyVec      = vec2(1.0, 0.0);
-// #elif defined(VERTICAL_BLUR_5)
-// const float numBlurPixelsPerSide = 2.0;
-// const vec2  blurMultiplyVec      = vec2(0.0, 1.0);
-// #elif defined(HORIZONTAL_BLUR_5)
-// const float numBlurPixelsPerSide = 2.0;
-// const vec2  blurMultiplyVec      = vec2(1.0, 0.0);
-// #else
-// // This only exists to get this shader to compile when no macros are defined
-// const float numBlurPixelsPerSide = 2.0;
-// const vec2  blurMultiplyVec      = vec2(1.0, 0.0);
-// #endif
+      gl_FragColor = vec4(blurredVal, blurredVal, blurredVal, 1.0);
+    }`;
 
-const float numBlurPixelsPerSide = 20.0;
-const vec2  blurMultiplyVec      = vec2(0.0, 1.0);
-
-void main() {
-
-  // Incremental Gaussian Coefficent Calculation (See GPU Gems 3 pp. 877 - 889)
-  vec3 incrementalGaussian;
-  incrementalGaussian.x = 1.0 / (sqrt(2.0 * pi) * sigma);
-  incrementalGaussian.y = exp(-0.5 / (sigma * sigma));
-  incrementalGaussian.z = incrementalGaussian.y * incrementalGaussian.y;
-
-  vec4 avgValue = vec4(0.0, 0.0, 0.0, 0.0);
-  float coefficientSum = 0.0;
-
-  // Take the central sample first...
-  avgValue += texture2D(uSampler, vTextureCoord) * incrementalGaussian.x;
-  coefficientSum += incrementalGaussian.x;
-  incrementalGaussian.xy *= incrementalGaussian.yz;
-
-  // Go through the remaining 8 vertical samples (4 on each side of the center)
-  for (float i = 1.0; i <= numBlurPixelsPerSide; i++) { 
-    avgValue += texture2D(uSampler, vTextureCoord - i * blurSize * 
-                          blurMultiplyVec) * incrementalGaussian.x;         
-    avgValue += texture2D(uSampler, vTextureCoord + i * blurSize * 
-                          blurMultiplyVec) * incrementalGaussian.x;     
-    coefficientSum += 2.0 * incrementalGaussian.x;
-    incrementalGaussian.xy *= incrementalGaussian.yz;
-  }
-
-  gl_FragColor = avgValue / coefficientSum;
-}
+  // 2 7 
+  // kernal, threshold ^
+  // i <= threshold? 0: 255;
+  const threshold = `
+    varying vec2 vTextureCoord;
+    uniform sampler2D uSampler;
+    void main(void)
+    {
+      // vec4 color = texture2D(uSampler, vTextureCoord);
+      // float thres = color.r > 0.6 ? 1.0 : 0.0;
+      // gl_FragColor = vec4(thres, thres, thres, 1.0);
+    }
   `;
 
+
   const greyFilter = new PIXI.Filter('', greyScale, {});
-  const blurFilter = new PIXI.Filter('', blurShader, {});
-console.log('wat');
-  videoSprite.filters = [greyFilter, blurFilter];
+  const boxBlurFilter = new PIXI.Filter('', boxBlur, {});
+  const thresholdFilter = new PIXI.Filter('', threshold, {});
+
+  videoSprite.filters = [greyFilter, boxBlurFilter];
+  greyVideoSprite.filters = [greyFilter];
 
   //sprite to canvas
   app.stage.addChild(videoSprite);
+  videoSprite.position.x = 480;
+  app.stage.addChild(greyVideoSprite);
+  debugGraphics = new PIXI.Graphics();
+  debugGraphics.position.y = 360;
+  app.stage.addChild(debugGraphics);
   
   navigator.mediaDevices
     .getUserMedia({ video: { width: 480, height: 360, facingMode: "environment" } })
@@ -214,20 +211,20 @@ console.log('wat');
   );
 
   detector = new aruco.Detector();
-
   requestAnimationFrame(update);
 }
 
 let prevTime = Date.now();
 const FRAME_CAP = 1.0 / 35; // Capped frame rate, 1/30 = 30fps
 let frameCounter = 0;
+let greyFormatImage = new GreyscaleImage(480, 360);
+let greyFormatSourceImage = new GreyscaleImage(480, 360);
 
-function update(){
+function update() {
   const currentTime = Date.now();
   const dt = currentTime - prevTime;
   prevTime = currentTime;
   frameCounter += dt / 1000;
-
   requestAnimationFrame(update);
 
   // logic for frame capping for future optimizations
@@ -235,7 +232,6 @@ function update(){
   if (frameCounter >= FRAME_CAP) {
     // fpsCounter.innerHTML = Math.floor(1 / frameCounter);
     frameCounter = 0;
-
   } else {
     return;
   }
@@ -243,18 +239,35 @@ function update(){
   // if (canvas.width !== video.videoWidth) {
   //   canvas.width = video.videoWidth;
   //   canvas.height = video.videoHeight;
-  //   overlay.width = video.videoWidth;
-  //   overlay.height = video.videoHeight;
+    // mOverlay.width = app.renderer.view.videoWidth;
+    // mOverlay.height = app.renderer.view.videoHeight;
   // }
 
   // if (video.readyState === video.HAVE_ENOUGH_DATA){
     // // Render video frame
-    // context.drawImage(video, 0, 0, canvas.width, canvas.height);
-    // imageData = context.getImageData(0, 0, canvas.width, canvas.height);
-    
+    imageData = app.renderer.extract.pixels(app.stage);
+    greyFormatImage.sampleFrom(imageData, 480*2, 480, 0);
+    greyFormatSourceImage.sampleFrom(imageData, 480*2, 0, 0);
+
     // overlayCtx.clearRect(0,0, overlay.width, overlay.height);
 
-    // var markers = detector.detect(imageData);
+    var markers = detector.detect(greyFormatImage, greyFormatSourceImage);
+    debugGraphics.clear();
+    // Draw candidates
+    markers.forEach((m) => {
+      const c = m.corners;
+      debugGraphics.lineStyle(1, 0xffffff);
+
+      debugGraphics.moveTo(c[0].x, c[0].y);
+      debugGraphics.lineTo(c[1].x, c[1].y);
+      debugGraphics.lineTo(c[2].x, c[2].y);
+      debugGraphics.lineTo(c[3].x, c[3].y);
+      debugGraphics.lineTo(c[0].x, c[0].y);
+      
+      debugGraphics.endFill();
+
+    });
+    
 
     // if (canStreamMarkers) {
     //   socket.send(JSON.stringify({
